@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Icarus — Numerical Analysis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+<body>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Analyzing…</div>
+    <div class="loading-subtext">Computing numerical methods & convergence data</div>
+  </div>
+
+  <div class="app-container">
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-icon">∫</div>
+        <div class="logo-text">
+          <h1>Icarus</h1>
+          <p>Numerical Analysis</p>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="demoSelect">Load Demo</label>
+        <select id="demoSelect">
+          <option value="">— Select a demo —</option>
+        </select>
+        <button id="btnLoadDemo" class="btn btn-secondary">Load</button>
+      </div>
+
+      <div class="input-group">
+        <label for="functionInput"><span class="label-icon">ƒ</span> Function f(x)</label>
+        <textarea id="functionInput" rows="3" placeholder="e.g. x**3 - x - 2"></textarea>
+      </div>
+
+      <div class="input-group">
+        <label>Interval [a, b]</label>
+        <div class="input-row">
+          <input type="number" id="inputA" step="any" placeholder="a" value="-5">
+          <input type="number" id="inputB" step="any" placeholder="b" value="5">
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="inputX0">Initial Guess (x0)</label>
+        <input type="number" id="inputX0" step="any" placeholder="x0" value="0">
+      </div>
+
+      <div class="input-group">
+        <label>Parameters</label>
+        <div class="input-row">
+          <select id="inputTolerance">
+            <option value="1e-3">1e-3</option>
+            <option value="1e-6">1e-6</option>
+            <option value="1e-10" selected>1e-10</option>
+            <option value="1e-14">1e-14</option>
+          </select>
+          <input type="number" id="inputMaxIter" value="100" min="1" max="1000">
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Methods 
+          <span class="text-small" style="float:right">
+            <a href="#" id="selectAllMethods">All</a> | <a href="#" id="deselectAllMethods">None</a>
+          </span>
+        </label>
+        <div class="method-checkboxes">
+          <label><input type="checkbox" name="method" value="bisection" checked> Bisection</label><br>
+          <label><input type="checkbox" name="method" value="secant" checked> Secant</label><br>
+          <label><input type="checkbox" name="method" value="regula_falsi" checked> Regula Falsi</label><br>
+          <label><input type="checkbox" name="method" value="illinois" checked> Illinois</label><br>
+          <label><input type="checkbox" name="method" value="brent" checked> Brent's Method</label><br>
+          <label><input type="checkbox" name="method" value="newton_raphson" checked> Newton-Raphson</label>
+        </div>
+      </div>
+
+      <button id="btnRunAnalysis" class="btn btn-primary" style="margin-top: 1rem; width: 100%;">Run Analysis</button>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="top-header">
+        <h2>Dashboard</h2>
+        <span id="headerBadge" class="badge">Ready</span>
+      </header>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h4>Methods Run</h4>
+          <div class="stat-value" id="statMethodsRun">—</div>
+          <div class="stat-detail" id="statMethodsRunDetail">Wait for run</div>
+        </div>
+        <div class="stat-card">
+          <h4>Fastest</h4>
+          <div class="stat-value" id="statFastest">—</div>
+          <div class="stat-detail" id="statFastestDetail">Wait for run</div>
+        </div>
+        <div class="stat-card">
+          <h4>Most Accurate</h4>
+          <div class="stat-value text-small" id="statAccurate">—</div>
+          <div class="stat-detail" id="statAccurateDetail">Wait for run</div>
+        </div>
+        <div class="stat-card">
+          <h4>Convergence</h4>
+          <div class="stat-value" id="statConvergence">—</div>
+          <div class="stat-detail" id="statConvergenceDetail">Wait for run</div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <nav class="tab-nav" id="tabNav">
+          <button class="tab-btn active" data-tab="results">Results</button>
+          <button class="tab-btn" data-tab="comparison">Comparison</button>
+          <button class="tab-btn" data-tab="convergence">Convergence</button>
+          <button class="tab-btn" data-tab="error-decay">Error Decay</button>
+          <button class="tab-btn" data-tab="analysis">Analysis</button>
+        </nav>
+
+        <div class="tab-content active" id="tabResults">
+          <div id="resultsGrid" class="results-grid">
+            <div class="empty-state" id="emptyResults">Run an analysis to see results</div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="tabComparison">
+          <div class="card">
+            <h3>Comparison Table</h3>
+            <table class="comparison-table">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Method</th>
+                  <th>Root</th>
+                  <th>Iter</th>
+                  <th>Time (ms)</th>
+                  <th>Error</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="comparisonTableBody"></tbody>
+            </table>
+          </div>
+          <div class="charts-grid" style="margin-top: 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="card">
+              <h3>Iterations Needed</h3>
+              <div id="chartIterations" style="height:300px;"></div>
+            </div>
+            <div class="card">
+              <h3>Execution Time</h3>
+              <div id="chartTime" style="height:300px;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="tabConvergence">
+          <div class="card">
+            <h3>Root Approximation by Iteration</h3>
+            <div id="chartConvergence" style="height: 500px;"></div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="tabError-decay">
+          <div class="card">
+            <h3>Error Decay Rate (Log Scale)</h3>
+            <div id="chartErrorDecay" style="height: 500px;"></div>
+          </div>
+        </div>
+
+        <div class="tab-content" id="tabAnalysis">
+          <div class="card" id="functionPropsCard" style="display:none; margin-bottom: 1rem;">
+            <h3>Function Properties</h3>
+            <div id="functionPropsGrid" class="props-grid"></div>
+          </div>
+          <div class="card" style="margin-bottom: 1rem;">
+            <h3>Analytical Reasoning</h3>
+            <div id="reasoningItems">
+              <div class="empty-state" id="emptyReasoning">Run analysis first</div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Detected Patterns</h3>
+            <div id="patternItems">
+              <div class="empty-state" id="emptyPatterns">Run analysis first</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Error Log -->
+  <div class="error-log-section hidden" id="errorLogSection">
+    <div class="error-log-header" id="errorLogHeader">
+      <span><span id="errorCount">0</span> Errors</span>
+      <span class="toggle-icon" id="errorToggleIcon">▲</span>
+    </div>
+    <div class="error-log-body" id="errorLogBody">
+      <div id="errorLogContent"></div>
+    </div>
+  </div>
+
+  <script src="/static/js/main.js"></script>
+</body>
+</html>
