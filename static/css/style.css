@@ -797,6 +797,15 @@ select option {
   color: var(--accent-cyan);
 }
 
+.method-card .method-explanation {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 12px;
+  margin-top: 8px;
+}
+
 .method-card .error-indicator {
   height: 3px;
   background: rgba(255, 255, 255, 0.05);

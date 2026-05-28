@@ -434,6 +434,9 @@
         </div>
         <div class="error-indicator">
           <div class="error-fill" style="width: ${errWidth}%"></div>
+        </div>
+        <div class="method-explanation">
+          ${escapeHTML(data.method_explanations ? data.method_explanations[methodKey] : '')}
         </div>`;
       dom.resultsGrid.appendChild(card);
     });
