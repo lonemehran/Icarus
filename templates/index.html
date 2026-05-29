@@ -70,19 +70,44 @@
         </div>
       </div>
 
-      <div class="input-group">
-        <label>Methods 
+      <div class="input-group checkbox-group">
+        <div class="checkbox-header">
+          <label>Methods</label>
           <span class="text-small" style="float:right">
             <a href="#" id="selectAllMethods">All</a> | <a href="#" id="deselectAllMethods">None</a>
           </span>
-        </label>
+        </div>
         <div class="method-checkboxes">
-          <label><input type="checkbox" name="method" value="bisection" checked> Bisection</label><br>
-          <label><input type="checkbox" name="method" value="secant" checked> Secant</label><br>
-          <label><input type="checkbox" name="method" value="regula_falsi" checked> Regula Falsi</label><br>
-          <label><input type="checkbox" name="method" value="illinois" checked> Illinois</label><br>
-          <label><input type="checkbox" name="method" value="brent" checked> Brent's Method</label><br>
-          <label><input type="checkbox" name="method" value="newton_raphson" checked> Newton-Raphson</label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="method" value="bisection" checked>
+            <span class="method-dot" style="background-color: var(--color-bisection)"></span>
+            <span class="method-label">Bisection</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="method" value="secant" checked>
+            <span class="method-dot" style="background-color: var(--color-secant)"></span>
+            <span class="method-label">Secant</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="method" value="regula_falsi" checked>
+            <span class="method-dot" style="background-color: var(--color-regula-falsi)"></span>
+            <span class="method-label">Regula Falsi</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="method" value="illinois" checked>
+            <span class="method-dot" style="background-color: var(--color-illinois)"></span>
+            <span class="method-label">Illinois</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="method" value="brent" checked>
+            <span class="method-dot" style="background-color: var(--color-brent)"></span>
+            <span class="method-label">Brent's Method</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="method" value="newton_raphson" checked>
+            <span class="method-dot" style="background-color: var(--color-newton)"></span>
+            <span class="method-label">Newton-Raphson</span>
+          </label>
         </div>
       </div>
 
@@ -91,35 +116,35 @@
 
     <!-- Main Content -->
     <main class="main-content">
-      <header class="top-header">
+      <header class="page-header">
         <h2>Dashboard</h2>
         <span id="headerBadge" class="badge">Ready</span>
       </header>
 
-      <div class="stats-grid">
+      <div class="stats-bar">
         <div class="stat-card">
-          <h4>Methods Run</h4>
+          <span class="stat-label">Methods Run</span>
           <div class="stat-value" id="statMethodsRun">—</div>
           <div class="stat-detail" id="statMethodsRunDetail">Wait for run</div>
         </div>
         <div class="stat-card">
-          <h4>Fastest</h4>
+          <span class="stat-label">Fastest</span>
           <div class="stat-value" id="statFastest">—</div>
           <div class="stat-detail" id="statFastestDetail">Wait for run</div>
         </div>
         <div class="stat-card">
-          <h4>Most Accurate</h4>
+          <span class="stat-label">Most Accurate</span>
           <div class="stat-value text-small" id="statAccurate">—</div>
           <div class="stat-detail" id="statAccurateDetail">Wait for run</div>
         </div>
         <div class="stat-card">
-          <h4>Convergence</h4>
+          <span class="stat-label">Convergence</span>
           <div class="stat-value" id="statConvergence">—</div>
           <div class="stat-detail" id="statConvergenceDetail">Wait for run</div>
         </div>
       </div>
 
-      <div class="tabs">
+      <div class="tab-container">
         <nav class="tab-nav" id="tabNav">
           <button class="tab-btn active" data-tab="results">Results</button>
           <button class="tab-btn" data-tab="comparison">Comparison</button>
@@ -137,7 +162,7 @@
         <div class="tab-content" id="tabComparison">
           <div class="card">
             <h3>Comparison Table</h3>
-            <table class="comparison-table">
+            <table class="stats-table">
               <thead>
                 <tr>
                   <th>Rank</th>
@@ -152,47 +177,69 @@
               <tbody id="comparisonTableBody"></tbody>
             </table>
           </div>
-          <div class="charts-grid" style="margin-top: 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div class="card">
-              <h3>Iterations Needed</h3>
-              <div id="chartIterations" style="height:300px;"></div>
+          <div class="charts-row" style="margin-top: 1.5rem;">
+            <div class="chart-container">
+              <div class="chart-title">
+                <span class="chart-icon">📊</span>
+                <span>Iterations Needed</span>
+              </div>
+              <div class="chart-wrapper" id="chartIterations"></div>
             </div>
-            <div class="card">
-              <h3>Execution Time</h3>
-              <div id="chartTime" style="height:300px;"></div>
+            <div class="chart-container">
+              <div class="chart-title">
+                <span class="chart-icon">⏱</span>
+                <span>Execution Time</span>
+              </div>
+              <div class="chart-wrapper" id="chartTime"></div>
             </div>
           </div>
         </div>
 
         <div class="tab-content" id="tabConvergence">
-          <div class="card">
-            <h3>Root Approximation by Iteration</h3>
-            <div id="chartConvergence" style="height: 500px;"></div>
+          <div class="chart-container">
+            <div class="chart-title">
+              <span class="chart-icon">📈</span>
+              <span>Root Approximation by Iteration</span>
+            </div>
+            <div class="chart-wrapper" id="chartConvergence" style="min-height: 500px;"></div>
           </div>
         </div>
 
-        <div class="tab-content" id="tabError-decay">
-          <div class="card">
-            <h3>Error Decay Rate (Log Scale)</h3>
-            <div id="chartErrorDecay" style="height: 500px;"></div>
+        <div class="tab-content" id="tabErrorDecay">
+          <div class="chart-container">
+            <div class="chart-title">
+              <span class="chart-icon">📉</span>
+              <span>Error Decay Rate (Log Scale)</span>
+            </div>
+            <div class="chart-wrapper" id="chartErrorDecay" style="min-height: 500px;"></div>
           </div>
         </div>
 
         <div class="tab-content" id="tabAnalysis">
-          <div class="card" id="functionPropsCard" style="display:none; margin-bottom: 1rem;">
-            <h3>Function Properties</h3>
-            <div id="functionPropsGrid" class="props-grid"></div>
+          <div class="function-props-card" id="functionPropsCard" style="display:none; margin-bottom: 1.5rem;">
+            <h4>Function Properties</h4>
+            <div id="functionPropsGrid" class="prop-grid"></div>
           </div>
-          <div class="card" style="margin-bottom: 1rem;">
-            <h3>Analytical Reasoning</h3>
-            <div id="reasoningItems">
-              <div class="empty-state" id="emptyReasoning">Run analysis first</div>
+          
+          <div class="reasoning-panel">
+            <div class="card">
+              <h3 class="reasoning-section-title">
+                <span class="icon">💡</span>
+                <span>Analytical Reasoning</span>
+              </h3>
+              <div id="reasoningItems" style="margin-top: 12px;">
+                <div class="empty-state" id="emptyReasoning">Run analysis first</div>
+              </div>
             </div>
-          </div>
-          <div class="card">
-            <h3>Detected Patterns</h3>
-            <div id="patternItems">
-              <div class="empty-state" id="emptyPatterns">Run analysis first</div>
+            
+            <div class="card">
+              <h3 class="reasoning-section-title">
+                <span class="icon">🔍</span>
+                <span>Detected Patterns</span>
+              </h3>
+              <div id="patternItems" style="margin-top: 12px;">
+                <div class="empty-state" id="emptyPatterns">Run analysis first</div>
+              </div>
             </div>
           </div>
         </div>
@@ -202,13 +249,16 @@
   </div>
 
   <!-- Error Log -->
-  <div class="error-log-section hidden" id="errorLogSection">
+  <div class="error-log hidden" id="errorLogSection">
     <div class="error-log-header" id="errorLogHeader">
-      <span><span id="errorCount">0</span> Errors</span>
+      <h4>
+        <span class="error-count" id="errorCount">0</span>
+        <span>Errors</span>
+      </h4>
       <span class="toggle-icon" id="errorToggleIcon">▲</span>
     </div>
     <div class="error-log-body" id="errorLogBody">
-      <div id="errorLogContent"></div>
+      <div class="error-log-content" id="errorLogContent"></div>
     </div>
   </div>
 

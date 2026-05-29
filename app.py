@@ -246,6 +246,16 @@ def api_solve():
         except Exception:
             method_explanations[name] = f"{name}: explanation unavailable."
 
+    # ---- Find true root (best root from converged methods) ----------------
+    true_root = None
+    by_acc = comparison.get("rankings", {}).get("by_accuracy", [])
+    if by_acc:
+        for m_name, _ in by_acc:
+            m_res = results.get(m_name, {})
+            if m_res.get("converged"):
+                true_root = m_res.get("root")
+                break
+
     # ---- Assemble response -----------------------------------------------
     response = _sanitise_for_json({
         "results": results,
@@ -254,6 +264,7 @@ def api_solve():
         "reasoning": reasoning,
         "patterns": patterns,
         "method_explanations": method_explanations,
+        "true_root": true_root,
     })
 
     return jsonify(response)
