@@ -695,11 +695,12 @@
         traces.push({
           x: [1, maxIter],
           y: [numRoot, numRoot],
-        mode: 'lines',
-        name: 'True Root',
-        line: { color: '#f8fafc', width: 1.5, dash: 'dash' },
-        hovertemplate: 'True Root: %{y:.10f}<extra></extra>',
-      });
+          mode: 'lines',
+          name: 'True Root',
+          line: { color: '#f8fafc', width: 1.5, dash: 'dash' },
+          hovertemplate: 'True Root: %{y:.10f}<extra></extra>',
+        });
+      }
     }
 
     if (traces.length === 0) return;
