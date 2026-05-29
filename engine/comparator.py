@@ -12,7 +12,7 @@ from __future__ import annotations
 import time
 from typing import Callable, Dict, List, Optional, Tuple, Any
 
-from engine.methods import get_all_methods
+from engine.methods import get_all_methods, _safe_eval
 
 
 # --------------------------------------------------------------------- #
@@ -80,6 +80,8 @@ def _run_single_method(
             "iterations": 0,
             "execution_time_ms": elapsed_ms,
             "final_error": float("inf"),
+            "error": float("inf"),
+            "f_root": float("inf"),
             "space_complexity": _SPACE_COMPLEXITY.get(method_name, "O(1)"),
             "steps": [],
             "diverged": False,
@@ -92,12 +94,18 @@ def _run_single_method(
 
     error_rates = _compute_error_reduction_rates(result.get("steps", []))
 
+    root = result.get("root")
+    f_root = _safe_eval(f, root) if root is not None else float("inf")
+    final_error = result.get("final_error", float("inf"))
+
     return {
-        "root": result.get("root"),
+        "root": root,
         "converged": result.get("converged", False),
         "iterations": result.get("iterations", 0),
         "execution_time_ms": round(elapsed_ms, 4),
-        "final_error": result.get("final_error", float("inf")),
+        "final_error": final_error,
+        "error": final_error,
+        "f_root": f_root,
         "space_complexity": _SPACE_COMPLEXITY.get(method_name, "O(1)"),
         "steps": result.get("steps", []),
         "diverged": result.get("diverged", False),

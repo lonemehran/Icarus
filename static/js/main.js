@@ -1,6 +1,7 @@
 /* ============================================================
    Icarus — Main Application JavaScript
    Vanilla JS – no frameworks
+   Includes MathLive LaTeX Math field translation
    ============================================================ */
 
 (function () {
@@ -75,6 +76,8 @@
   const dom = {
     loadingOverlay:    $('#loadingOverlay'),
     functionInput:     $('#functionInput'),
+    mathField:         $('#mathField'),
+    mathPreviewCode:   $('#mathPreviewCode'),
     inputA:            $('#inputA'),
     inputB:            $('#inputB'),
     inputX0:           $('#inputX0'),
@@ -125,7 +128,99 @@
     errorToggleIcon: $('#errorToggleIcon'),
   };
 
-  // ---------- Utility Functions ----------
+  // ---------- Math Conversion Utilities ----------
+
+  function latexToPython(latex) {
+    let s = latex;
+
+    // Remove whitespace and LaTeX spacing/spacer commands
+    s = s.replace(/\\,/g, ' ')
+         .replace(/\\;/g, ' ')
+         .replace(/\\ /g, ' ')
+         .replace(/\\quad/g, ' ')
+         .replace(/\\qquad/g, ' ')
+         .replace(/\\!/g, '');
+
+    // Replace multiplication symbols
+    s = s.replace(/\\cdot/g, '*')
+         .replace(/\\times/g, '*');
+
+    // Replace brackets/parentheses
+    s = s.replace(/\\left\(/g, '(')
+         .replace(/\\right\)/g, ')')
+         .replace(/\\left\[/g, '[')
+         .replace(/\\right\]/g, ']')
+         .replace(/\\left\\\{/g, '{')
+         .replace(/\\right\\\}/g, '}');
+
+    // Replace absolute values: \left| x \right| -> abs(x)
+    s = s.replace(/\\left\|(.*?)\\right\|/g, 'abs($1)');
+    s = s.replace(/\|(.*?)\|/g, 'abs($1)');
+    
+    // Replace fractions: \frac{a}{b} -> ((a)/(b))
+    while (s.includes('\\frac{')) {
+      s = s.replace(/\\frac\s*{(.*?)}{(.*?)}/g, '(($1)/($2))');
+    }
+
+    // Replace square roots: \sqrt{x} -> sqrt(x)
+    while (s.includes('\\sqrt{')) {
+      s = s.replace(/\\sqrt\s*{(.*?)}/g, 'sqrt($1)');
+    }
+
+    // Replace superscripts/powers: x^{y} -> x**(y), x^y -> x**y
+    s = s.replace(/\^{([^}]+)}/g, '**($1)');
+    s = s.replace(/\^([a-zA-Z0-9])/g, '**$1');
+
+    // Replace LaTeX function backslashes: \sin, \cos, \tan, \ln, \log, \exp, \sinh, \cosh, \tanh
+    s = s.replace(/\\(sin|cos|tan|ln|log|exp|sinh|cosh|tanh|arcsin|arccos|arctan)\b/g, '$1');
+
+    // Replace constants
+    s = s.replace(/\\pi\b/g, 'pi');
+    s = s.replace(/\\theta\b/g, 'theta');
+
+    // Clean up remaining backslashes safely
+    s = s.replace(/\\/g, '');
+
+    // Safely insert implicit multiplication (e.g. 2x -> 2*x, 2( -> 2*(, x y -> x*y)
+    // 1. Digit followed by letter or parenthesis or math function
+    s = s.replace(/(\d+)([a-zA-Z\(])/g, '$1*$2');
+    
+    // 2. Right parenthesis followed by left parenthesis/digit/letter
+    s = s.replace(/\)([\d\w\(])/g, ')*$1');
+
+    // 3. Letter followed by parenthesis, but exclude math function names
+    const functions = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sinh', 'cosh', 'tanh', 'exp', 'log', 'ln', 'abs', 'sqrt', 'sign', 'floor', 'ceil', 'ceiling'];
+    s = s.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g, (match, name) => {
+      if (functions.includes(name.toLowerCase())) {
+        return name + '(';
+      }
+      return name + '*(';
+    });
+
+    // 4. Spaces between letters/digits -> multiply
+    s = s.replace(/([a-zA-Z0-9])\s+([a-zA-Z])/g, '$1*$2');
+
+    // Clean up any double multiplications or operators
+    s = s.replace(/\*\s*\*/g, '**');
+
+    return s;
+  }
+
+  function pythonToLatex(expr) {
+    let s = expr;
+    // Replace double asterisks with carrot for simple powers
+    s = s.replace(/([a-zA-Z0-9\)])\*\*([a-zA-Z0-9\-]+)/g, '$1^{$2}');
+    s = s.replace(/([a-zA-Z0-9\)])\*\*\((.*?)\)/g, '$1^{$2}');
+    // Replace multiplication asterisks
+    s = s.replace(/\*/g, '');
+    // Replace abs(x) -> |x|
+    s = s.replace(/abs\((.*?)\)/g, '\\left|$1\\right|');
+    // Replace sin, cos, tan, exp, log, sqrt
+    s = s.replace(/(sin|cos|tan|exp|log|sqrt)\((.*?)\)/g, '\\$1($2)');
+    return s;
+  }
+
+  // ---------- Formatting Utilities ----------
 
   function formatNumber(n, digits) {
     if (n == null || isNaN(n)) return '—';
@@ -239,7 +334,17 @@
     const demo = window._demoData[parseInt(idx)];
     if (!demo) return;
 
-    dom.functionInput.value = demo.function || demo.func || '';
+    // Load function expression and convert to latex for MathLive
+    const pythonExpr = demo.function || demo.func || '';
+    dom.functionInput.value = pythonExpr;
+    const latexExpr = pythonToLatex(pythonExpr);
+    if (dom.mathField) {
+      dom.mathField.setValue(latexExpr);
+    }
+    if (dom.mathPreviewCode) {
+      dom.mathPreviewCode.textContent = pythonExpr;
+    }
+
     if (demo.a != null) dom.inputA.value = demo.a;
     if (demo.b != null) dom.inputB.value = demo.b;
     if (demo.x0 != null) dom.inputX0.value = demo.x0;
@@ -257,8 +362,16 @@
   async function runAnalysis() {
     clearErrors();
 
-    // Collect form data
-    const funcStr = dom.functionInput.value.trim();
+    // Get current latex value and translate it to python
+    let funcStr = '';
+    if (dom.mathField) {
+      const latex = dom.mathField.getValue('latex');
+      funcStr = latexToPython(latex).trim();
+      dom.functionInput.value = funcStr;
+    } else {
+      funcStr = dom.functionInput.value.trim();
+    }
+
     if (!funcStr) {
       showError('Please enter a function f(x).');
       return;
@@ -338,28 +451,34 @@
     dom.statMethodsRun.textContent = results.length;
     dom.statMethodsRunDetail.textContent = `${converged.length} converged`;
 
-    // Fastest
-    if (converged.length > 0) {
-      const fastest = converged.reduce((a, b) =>
+    // Fastest: Find among converged first, then among all that ran iterations
+    const activeResults = results.filter(r => r.iterations > 0 || r.execution_time_ms > 0);
+    const pool = converged.length > 0 ? converged : activeResults;
+
+    if (pool.length > 0) {
+      const fastest = pool.reduce((a, b) =>
         (a.execution_time_ms || Infinity) < (b.execution_time_ms || Infinity) ? a : b
       );
       dom.statFastest.textContent = METHOD_LABELS[fastest.method] || fastest.method;
-      dom.statFastestDetail.textContent = formatTime(fastest.execution_time_ms);
+      dom.statFastestDetail.textContent = formatTime(fastest.execution_time_ms) + (fastest.converged ? '' : ' (non-conv)');
     } else {
       dom.statFastest.textContent = '—';
-      dom.statFastestDetail.textContent = 'No convergence';
+      dom.statFastestDetail.textContent = 'No methods ran';
     }
 
-    // Most accurate
-    if (converged.length > 0) {
-      const accurate = converged.reduce((a, b) =>
-        Math.abs(a.error || Infinity) < Math.abs(b.error || Infinity) ? a : b
-      );
+    // Most accurate: Find among ALL methods that returned results (even non-converged)
+    if (results.length > 0) {
+      const accurate = results.reduce((a, b) => {
+        const errorA = Math.abs(a.error != null ? a.error : (a.final_error != null ? a.final_error : Infinity));
+        const errorB = Math.abs(b.error != null ? b.error : (b.final_error != null ? b.final_error : Infinity));
+        return errorA < errorB ? a : b;
+      });
       dom.statAccurate.textContent = METHOD_LABELS[accurate.method] || accurate.method;
-      dom.statAccurateDetail.textContent = '|ε| = ' + formatScientific(Math.abs(accurate.error));
+      const finalErr = accurate.error != null ? accurate.error : accurate.final_error;
+      dom.statAccurateDetail.textContent = '|ε| = ' + formatScientific(Math.abs(finalErr));
     } else {
       dom.statAccurate.textContent = '—';
-      dom.statAccurateDetail.textContent = 'No convergence';
+      dom.statAccurateDetail.textContent = 'No methods ran';
     }
 
     // Convergence rate
@@ -394,8 +513,9 @@
 
       // Error bar width (log-scale, clamped)
       let errWidth = 100;
-      if (r.error != null && r.error !== 0) {
-        const logErr = -Math.log10(Math.abs(r.error));
+      const currentError = r.error != null ? r.error : r.final_error;
+      if (currentError != null && currentError !== 0) {
+        const logErr = -Math.log10(Math.abs(currentError));
         errWidth = Math.min(100, Math.max(5, (logErr / 16) * 100));
       }
 
@@ -421,7 +541,7 @@
           </div>
           <div class="metric">
             <span class="metric-label">Error</span>
-            <span class="metric-value">${formatScientific(r.error)}</span>
+            <span class="metric-value">${formatScientific(currentError)}</span>
           </div>
           <div class="metric">
             <span class="metric-label">Space</span>
@@ -452,7 +572,9 @@
     const sorted = [...results].sort((a, b) => {
       if (a.converged && !b.converged) return -1;
       if (!a.converged && b.converged) return 1;
-      return Math.abs(a.error || Infinity) - Math.abs(b.error || Infinity);
+      const errorA = Math.abs(a.error != null ? a.error : (a.final_error != null ? a.final_error : Infinity));
+      const errorB = Math.abs(b.error != null ? b.error : (b.final_error != null ? b.final_error : Infinity));
+      return errorA - errorB;
     });
 
     sorted.forEach((r, i) => {
@@ -461,6 +583,7 @@
       const status = r.converged ? 'Converged' : (r.stagnated ? 'Stagnated' : 'Diverged');
       const statusCls = r.converged ? 'text-emerald' : (r.stagnated ? 'text-amber' : 'text-rose');
       const rankCls = rank <= 3 ? `rank-${rank}` : '';
+      const currentError = r.error != null ? r.error : r.final_error;
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -469,7 +592,7 @@
         <td class="text-mono">${formatNumber(r.root, 12)}</td>
         <td class="text-mono">${r.iterations != null ? r.iterations : '—'}</td>
         <td class="text-mono">${r.execution_time_ms != null ? r.execution_time_ms.toFixed(3) : '—'}</td>
-        <td class="text-mono">${formatScientific(r.error)}</td>
+        <td class="text-mono">${formatScientific(currentError)}</td>
         <td class="${statusCls}">${status}</td>`;
       dom.comparisonTableBody.appendChild(tr);
     });
@@ -698,6 +821,18 @@
   // ---------- Event Listeners ----------
 
   function init() {
+    // MathLive synchronization
+    if (dom.mathField) {
+      dom.mathField.addEventListener('input', () => {
+        const latex = dom.mathField.getValue('latex');
+        const pythonExpr = latexToPython(latex);
+        dom.functionInput.value = pythonExpr;
+        if (dom.mathPreviewCode) {
+          dom.mathPreviewCode.textContent = pythonExpr;
+        }
+      });
+    }
+
     // Run Analysis
     dom.btnRun.addEventListener('click', runAnalysis);
 

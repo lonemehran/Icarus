@@ -1498,3 +1498,106 @@ select option {
 .hidden {
   display: none !important;
 }
+
+/* ---------- MathLive / LaTeX Math Field Custom Styles ---------- */
+.math-input-group {
+  position: relative;
+}
+
+.math-field-wrapper {
+  background: var(--bg-input);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.math-field-wrapper:focus-within {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px var(--accent-blue-glow);
+}
+
+math-field {
+  background: transparent;
+  color: var(--text-primary);
+  border: none;
+  outline: none;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 6px 8px;
+  --caret-color: var(--accent-blue);
+  --selection-background-color: var(--accent-blue-glow);
+  --keyboard-zindex: 10001;
+}
+
+math-field::part(virtual-keyboard-toggle) {
+  display: none; /* Hide default virtual keyboard toggle if we want a clean look */
+}
+
+.math-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.02);
+  font-size: 0.78rem;
+}
+
+.math-preview .preview-label {
+  font-weight: 500;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  letter-spacing: 0.5px;
+}
+
+.math-preview code {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent-cyan);
+  word-break: break-all;
+}
+
+.label-hint {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.demo-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.demo-row select {
+  flex: 1;
+}
+
+.param-labels {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px;
+  margin-top: -2px;
+}
+
+.param-label-text {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+.btn-shortcut {
+  font-size: 0.7rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.2);
+}
+

@@ -3,12 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Icarus — Numerical Analysis</title>
+  <title>Icarus — Numerical Analysis Platform</title>
+  <meta name="description" content="Compare numerical root-finding methods: Bisection, Secant, Regula Falsi, Illinois, Brent, Newton-Raphson. Enter any mathematical function and analyze convergence.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/mathlive/dist/mathlive-static.css">
   <link rel="stylesheet" href="/static/css/style.css">
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <script defer src="https://unpkg.com/mathlive"></script>
 </head>
 <body>
 
@@ -16,7 +19,7 @@
   <div class="loading-overlay" id="loadingOverlay">
     <div class="loading-spinner"></div>
     <div class="loading-text">Analyzing…</div>
-    <div class="loading-subtext">Computing numerical methods & convergence data</div>
+    <div class="loading-subtext">Computing numerical methods &amp; convergence data</div>
   </div>
 
   <div class="app-container">
@@ -31,49 +34,76 @@
         </div>
       </div>
 
+      <!-- Demo Loader -->
       <div class="input-group">
-        <label for="demoSelect">Load Demo</label>
-        <select id="demoSelect">
-          <option value="">— Select a demo —</option>
-        </select>
-        <button id="btnLoadDemo" class="btn btn-secondary">Load</button>
+        <label for="demoSelect">Load Demo Function</label>
+        <div class="demo-row">
+          <select id="demoSelect">
+            <option value="">— Select a demo —</option>
+          </select>
+          <button id="btnLoadDemo" class="btn btn-secondary">Load</button>
+        </div>
       </div>
 
-      <div class="input-group">
-        <label for="functionInput"><span class="label-icon">ƒ</span> Function f(x)</label>
-        <textarea id="functionInput" rows="3" placeholder="e.g. x**3 - x - 2"></textarea>
+      <!-- LaTeX Math Input -->
+      <div class="input-group math-input-group">
+        <label>
+          <span class="label-icon">ƒ</span>
+          Function f(x) &nbsp;<span class="label-hint">— type naturally, e.g. x³−2x−5</span>
+        </label>
+        <div class="math-field-wrapper" id="mathFieldWrapper">
+          <math-field id="mathField"
+            style="width:100%; min-height: 54px; font-size: 1.1rem;"
+            virtual-keyboard-mode="off"
+            math-mode-space="\ "
+          >x^3 - 2x - 5</math-field>
+        </div>
+        <!-- Invisible sync target -->
+        <input type="hidden" id="functionInput" value="x**3 - 2*x - 5">
+        <div class="math-preview" id="mathPreview">
+          <span class="preview-label">Python:</span>
+          <code id="mathPreviewCode">x**3 - 2*x - 5</code>
+        </div>
       </div>
 
+      <!-- Interval -->
       <div class="input-group">
         <label>Interval [a, b]</label>
         <div class="input-row">
-          <input type="number" id="inputA" step="any" placeholder="a" value="-5">
-          <input type="number" id="inputB" step="any" placeholder="b" value="5">
+          <input type="number" id="inputA" step="any" placeholder="a" value="1">
+          <input type="number" id="inputB" step="any" placeholder="b" value="4">
         </div>
       </div>
 
+      <!-- Initial Guess -->
       <div class="input-group">
-        <label for="inputX0">Initial Guess (x0)</label>
-        <input type="number" id="inputX0" step="any" placeholder="x0" value="0">
+        <label for="inputX0">Initial Guess (x₀)</label>
+        <input type="number" id="inputX0" step="any" placeholder="x0" value="2.5">
       </div>
 
+      <!-- Parameters -->
       <div class="input-group">
         <label>Parameters</label>
         <div class="input-row">
-          <select id="inputTolerance">
-            <option value="1e-3">1e-3</option>
-            <option value="1e-6">1e-6</option>
-            <option value="1e-10" selected>1e-10</option>
-            <option value="1e-14">1e-14</option>
+          <select id="inputTolerance" title="Tolerance">
+            <option value="1e-3">tol = 1e-3</option>
+            <option value="1e-6">tol = 1e-6</option>
+            <option value="1e-10" selected>tol = 1e-10</option>
+            <option value="1e-14">tol = 1e-14</option>
           </select>
-          <input type="number" id="inputMaxIter" value="100" min="1" max="1000">
+          <input type="number" id="inputMaxIter" value="100" min="1" max="1000" title="Max Iterations">
+        </div>
+        <div class="param-labels">
+          <span class="param-label-text">Tolerance</span>
+          <span class="param-label-text">Max Iterations</span>
         </div>
       </div>
 
+      <!-- Methods -->
       <div class="input-group checkbox-group">
         <div class="checkbox-header">
           <label>Methods</label>
-          <span class="text-small" style="float:right">
+          <span class="text-small">
             <a href="#" id="selectAllMethods">All</a> | <a href="#" id="deselectAllMethods">None</a>
           </span>
         </div>
@@ -111,7 +141,10 @@
         </div>
       </div>
 
-      <button id="btnRunAnalysis" class="btn btn-primary" style="margin-top: 1rem; width: 100%;">Run Analysis</button>
+      <button id="btnRunAnalysis" class="btn btn-primary" style="margin-top: auto;">
+        ▶ Run Analysis
+        <span class="btn-shortcut">Ctrl+↵</span>
+      </button>
     </aside>
 
     <!-- Main Content -->
@@ -168,9 +201,9 @@
                   <th>Rank</th>
                   <th>Method</th>
                   <th>Root</th>
-                  <th>Iter</th>
+                  <th>Iterations</th>
                   <th>Time (ms)</th>
-                  <th>Error</th>
+                  <th>Final Error</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -181,14 +214,14 @@
             <div class="chart-container">
               <div class="chart-title">
                 <span class="chart-icon">📊</span>
-                <span>Iterations Needed</span>
+                <span>Iterations — All Methods</span>
               </div>
               <div class="chart-wrapper" id="chartIterations"></div>
             </div>
             <div class="chart-container">
               <div class="chart-title">
                 <span class="chart-icon">⏱</span>
-                <span>Execution Time</span>
+                <span>Execution Time — All Methods</span>
               </div>
               <div class="chart-wrapper" id="chartTime"></div>
             </div>
@@ -199,7 +232,7 @@
           <div class="chart-container">
             <div class="chart-title">
               <span class="chart-icon">📈</span>
-              <span>Root Approximation by Iteration</span>
+              <span>Root Approximation by Iteration — All Methods</span>
             </div>
             <div class="chart-wrapper" id="chartConvergence" style="min-height: 500px;"></div>
           </div>
@@ -209,7 +242,7 @@
           <div class="chart-container">
             <div class="chart-title">
               <span class="chart-icon">📉</span>
-              <span>Error Decay Rate (Log Scale)</span>
+              <span>Error Decay Rate (Log Scale) — All Methods</span>
             </div>
             <div class="chart-wrapper" id="chartErrorDecay" style="min-height: 500px;"></div>
           </div>
