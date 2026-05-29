@@ -223,27 +223,36 @@
   // ---------- Formatting Utilities ----------
 
   function formatNumber(n, digits) {
-    if (n == null || isNaN(n)) return '—';
+    if (n == null) return '—';
+    const num = Number(n);
+    if (isNaN(num)) return '—';
+    if (!isFinite(num)) return num > 0 ? '∞' : '-∞';
     digits = digits != null ? digits : 10;
-    if (Math.abs(n) < 1e-14) return '0';
-    if (Math.abs(n) >= 1e6 || (Math.abs(n) < 1e-4 && Math.abs(n) > 0)) {
-      return n.toExponential(digits > 4 ? 6 : digits);
+    if (Math.abs(num) < 1e-14) return '0';
+    if (Math.abs(num) >= 1e6 || (Math.abs(num) < 1e-4 && Math.abs(num) > 0)) {
+      return num.toExponential(digits > 4 ? 6 : digits);
     }
-    return parseFloat(n.toPrecision(digits)).toString();
+    return parseFloat(num.toPrecision(digits)).toString();
   }
 
   function formatScientific(n) {
-    if (n == null || isNaN(n)) return '—';
-    if (n === 0) return '0';
-    return n.toExponential(3);
+    if (n == null) return '—';
+    const num = Number(n);
+    if (isNaN(num)) return '—';
+    if (!isFinite(num)) return num > 0 ? '∞' : '-∞';
+    if (num === 0) return '0';
+    return num.toExponential(3);
   }
 
   function formatTime(ms) {
-    if (ms == null || isNaN(ms)) return '—';
-    if (ms < 0.001) return '< 0.001 ms';
-    if (ms < 1) return ms.toFixed(3) + ' ms';
-    if (ms < 1000) return ms.toFixed(2) + ' ms';
-    return (ms / 1000).toFixed(2) + ' s';
+    if (ms == null) return '—';
+    const num = Number(ms);
+    if (isNaN(num)) return '—';
+    if (!isFinite(num)) return num > 0 ? '∞' : '-∞';
+    if (num < 0.001) return '< 0.001 ms';
+    if (num < 1) return num.toFixed(3) + ' ms';
+    if (num < 1000) return num.toFixed(2) + ' ms';
+    return (num / 1000).toFixed(2) + ' s';
   }
 
   function showLoading() {
@@ -515,8 +524,13 @@
       let errWidth = 100;
       const currentError = r.error != null ? r.error : r.final_error;
       if (currentError != null && currentError !== 0) {
-        const logErr = -Math.log10(Math.abs(currentError));
-        errWidth = Math.min(100, Math.max(5, (logErr / 16) * 100));
+        const numErr = Number(currentError);
+        if (isFinite(numErr) && numErr > 0) {
+          const logErr = -Math.log10(numErr);
+          errWidth = Math.min(100, Math.max(5, (logErr / 16) * 100));
+        } else {
+          errWidth = 5;
+        }
       }
 
       const card = document.createElement('div');
@@ -572,9 +586,11 @@
     const sorted = [...results].sort((a, b) => {
       if (a.converged && !b.converged) return -1;
       if (!a.converged && b.converged) return 1;
-      const errorA = Math.abs(a.error != null ? a.error : (a.final_error != null ? a.final_error : Infinity));
-      const errorB = Math.abs(b.error != null ? b.error : (b.final_error != null ? b.final_error : Infinity));
-      return errorA - errorB;
+      const errorA = Number(a.error != null ? a.error : (a.final_error != null ? a.final_error : Infinity));
+      const errorB = Number(b.error != null ? b.error : (b.final_error != null ? b.final_error : Infinity));
+      const valA = isNaN(errorA) ? Infinity : errorA;
+      const valB = isNaN(errorB) ? Infinity : errorB;
+      return valA - valB;
     });
 
     sorted.forEach((r, i) => {
@@ -653,7 +669,11 @@
       if (history.length === 0) return;
 
       const xVals = history.map((_, i) => i + 1);
-      const yVals = history.map(h => h.x != null ? h.x : (h.approximation != null ? h.approximation : h));
+      const yVals = history.map(h => {
+        const val = h.x != null ? h.x : (h.approximation != null ? h.approximation : h);
+        const num = Number(val);
+        return isFinite(num) ? num : null;
+      });
 
       traces.push({
         x: xVals,
@@ -669,10 +689,12 @@
     // Add true root line if available
     const trueRoot = data.true_root;
     if (trueRoot != null && traces.length > 0) {
-      const maxIter = Math.max(...traces.map(t => Math.max(...t.x)));
-      traces.push({
-        x: [1, maxIter],
-        y: [trueRoot, trueRoot],
+      const numRoot = Number(trueRoot);
+      if (isFinite(numRoot)) {
+        const maxIter = Math.max(...traces.map(t => Math.max(...t.x)));
+        traces.push({
+          x: [1, maxIter],
+          y: [numRoot, numRoot],
         mode: 'lines',
         name: 'True Root',
         line: { color: '#f8fafc', width: 1.5, dash: 'dash' },
@@ -703,7 +725,8 @@
       const xVals = history.map((_, i) => i + 1);
       const yVals = history.map(h => {
         const err = h.error != null ? Math.abs(h.error) : (h.fx != null ? Math.abs(h.fx) : null);
-        return err != null && err > 0 ? err : null;
+        const num = Number(err);
+        return num != null && isFinite(num) && num > 0 ? num : null;
       });
 
       traces.push({
